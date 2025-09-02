@@ -22,13 +22,31 @@ import org.apache.rocketmq.client.log.ClientLogger;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * MQFaultStrategy主要用于生产者选择消息队列时，
+ * 避免向响应缓慢或不可用的Broker路由，
+ * 提升消息发送的成功率和系统稳定性
+ */
 public class MQFaultStrategy {
     private final static InternalLogger log = ClientLogger.getLog();
+
+    /**
+     * 延迟故障容错，维护每个Broker的发送消息的延迟
+     */
     private final LatencyFaultTolerance<String> latencyFaultTolerance = new LatencyFaultToleranceImpl();
 
+    /**
+     * 是否开启发送消息时故障转移
+     */
     private boolean sendLatencyFaultEnable = false;
 
+    /**
+     * 延迟队列时长数组
+     */
     private long[] latencyMax = {50L, 100L, 550L, 1000L, 2000L, 3000L, 15000L};
+    /**
+     * 不可用的队列时长数组
+     */
     private long[] notAvailableDuration = {0L, 0L, 30000L, 60000L, 120000L, 180000L, 600000L};
 
     public long[] getNotAvailableDuration() {
@@ -92,6 +110,12 @@ public class MQFaultStrategy {
         return tpInfo.selectOneMessageQueue(lastBrokerName);
     }
 
+    /**
+     * 更新延迟容错信息
+     * @param brokerName     brokerName
+     * @param currentLatency 延迟
+     * @param isolation      是否隔离。当开启隔离时，默认延迟为30000。目前主要用于发送消息异常时
+     */
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation) {
         if (this.sendLatencyFaultEnable) {
             long duration = computeNotAvailableDuration(isolation ? 30000 : currentLatency);
@@ -99,6 +123,11 @@ public class MQFaultStrategy {
         }
     }
 
+    /**
+     * 计算延迟对应的不可用时间
+     * @param currentLatency
+     * @return
+     */
     private long computeNotAvailableDuration(final long currentLatency) {
         for (int i = latencyMax.length - 1; i >= 0; i--) {
             if (currentLatency >= latencyMax[i])

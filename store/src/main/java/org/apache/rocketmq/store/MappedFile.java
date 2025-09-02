@@ -202,9 +202,11 @@ public class MappedFile extends ReferenceResource {
         assert messageExt != null;
         assert cb != null;
 
+        // 获取当前可写的位置，也就是下次开始写的位置
         int currentPos = this.wrotePosition.get();
-
+        // 判断是否超过文件大小
         if (currentPos < this.fileSize) {
+            // 写入字节缓存区
             ByteBuffer byteBuffer = writeBuffer != null ? writeBuffer.slice() : this.mappedByteBuffer.slice();
             byteBuffer.position(currentPos);
             AppendMessageResult result = null;
@@ -215,7 +217,9 @@ public class MappedFile extends ReferenceResource {
             } else {
                 return new AppendMessageResult(AppendMessageStatus.UNKNOWN_ERROR);
             }
+            // 写完文件内容后，更新最新的可写位置
             this.wrotePosition.addAndGet(result.getWroteBytes());
+            // 更新存储时间
             this.storeTimestamp = result.getStoreTimestamp();
             return result;
         }

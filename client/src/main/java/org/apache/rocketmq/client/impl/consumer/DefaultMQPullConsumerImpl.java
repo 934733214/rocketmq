@@ -361,6 +361,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
 
     @Override
     public void updateTopicSubscribeInfo(String topic, Set<MessageQueue> info) {
+        // topic和对应的订阅信息
         Map<String, SubscriptionData> subTable = this.rebalanceImpl.getSubscriptionInner();
         if (subTable != null) {
             if (subTable.containsKey(topic)) {
